@@ -1,0 +1,1 @@
+func renderAll(previews: [Preview]) {}

@@ -1,0 +1,23 @@
+{
+  "name": "swiftui-playground",
+  "version": "0.1.0",
+  "description": "SwiftUI Online Playground",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "repository": "github:kishikawakatumi/swiftui-playground",
+  "author": "Katsumi Kishikawa",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "compression": "^1.7.4",
+    "ejs": "^3.0.1",
+    "express": "^4.17.1",
+    "glob": "^7.1.6",
+    "imgur": "^0.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0"
+  }
+}
