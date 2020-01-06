@@ -7,10 +7,10 @@ https://swiftui-playground.kishikawakatsumi.com/
 
 ### Other Swift related playgrounds
 
-Swift Playground
+**Swift Playground**
 
 https://swift-playground.kishikawakatsumi.com/
 
-Swift AST Explorer
+**Swift AST Explorer**
 
 https://swift-ast-explorer.kishikawakatsumi.com/
