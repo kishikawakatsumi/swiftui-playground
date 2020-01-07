@@ -80,18 +80,20 @@ Sandbox.prototype.execute = function(success) {
 
           const glob = require('glob');
           const previewImages = glob.sync(`${work_dir}/*.png`);
-          const previewData = {};
+          const previews = [];
           for (const image of previewImages) {
             require('child_process').execSync(['cp', image, static_dir].join(' '));
+            const previewData = {};
             previewData['width'] = 750;
             previewData['height'] = 800;
-            previewData['link'] = path.join('https://swiftui-playground.kishikawakatsumi.com/', path.basename(static_dir), path.basename(image));
+            previewData['link'] = 'https://swiftui-playground.kishikawakatsumi.com/' + path.join(path.basename(static_dir), path.basename(image));
+            previews.push(previewData);
           }
 
           console.log(new Date());
-          console.log(previewData);
+          console.log(previews);
           execSync('rm', ['-rf', sandbox.temp_dir]);
-          success({output: data, previews: previewData}, errorlog, version);
+          success({output: data, previews: previews}, errorlog, version);
         });
       } else {
         fs.readFile(path.join(work_dir, 'errors'), 'utf8', function(error, errorlog) {
