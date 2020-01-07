@@ -83,9 +83,11 @@ Sandbox.prototype.execute = function(success) {
           const previews = [];
           for (const image of previewImages) {
             require('child_process').execSync(['cp', image, static_dir].join(' '));
+            const sizeOf = require('image-size');
+            const dimensions = sizeOf(image);
             const previewData = {};
-            previewData['width'] = 750;
-            previewData['height'] = 800;
+            previewData['width'] = dimensions.width;
+            previewData['height'] = dimensions.height;
             previewData['link'] = 'https://swiftui-playground.kishikawakatsumi.com/' + path.join(path.basename(static_dir), path.basename(image));
             previews.push(previewData);
           }
