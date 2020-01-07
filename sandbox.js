@@ -56,6 +56,11 @@ Sandbox.prototype.execute = function(success) {
   const work_dir = path.join(sandbox.root_dir, sandbox.temp_dir);
   exec(['sh', path.join(this.root_dir, 'run.sh'), this.timeout + 's', 'sh', path.join(work_dir, 'script.sh')].join(' '), {env: {'APP_ID': `${this.temp_dir}`.replace('temp/', '')}});
 
+  const root_dir = this.root_dir;
+  const temp_dir = this.temp_dir;
+  const static_dir = path.join(root_dir, path.join('static', temp_dir.split('/')[1]));
+  require('child_process').spawnSync('mkdir', [static_dir]);
+
   const intid = setInterval(function() {
     counter = counter + 1;
     fs.readFile(path.join(work_dir, 'completed'), 'utf8', function(error, data) {
@@ -75,13 +80,18 @@ Sandbox.prototype.execute = function(success) {
 
           const glob = require('glob');
           const previewImages = glob.sync(`${work_dir}/*.png`);
-          Q.all(previewImages.map(function (path) { return imgur.uploadFile(path); }))
-            .then(function(responses) {
-                execSync('rm', ['-rf', sandbox.temp_dir]);
-                const previewData = responses.map(function (response) { return {width: response.data.width, height: response.data.height, link: response.data.link}; });
-                console.log(previewData);
-                success({output: data, previews: previewData}, errorlog, version);
-            });
+          const previewData = {};
+          for (const image of previewImages) {
+            require('child_process').execSync(['cp', image, static_dir].join(' '));
+            previewData['width'] = 750;
+            previewData['height'] = 800;
+            previewData['link'] = path.join('https://swiftui-playground.kishikawakatsumi.com/', path.basename(static_dir), path.basename(image));
+          }
+
+          console.log(new Date());
+          console.log(previewData);
+          execSync('rm', ['-rf', sandbox.temp_dir]);
+          success({output: data, previews: previewData}, errorlog, version);
         });
       } else {
         fs.readFile(path.join(work_dir, 'errors'), 'utf8', function(error, errorlog) {
