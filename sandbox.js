@@ -7,7 +7,7 @@ const Sandbox = function(root_dir, temp_dir, code, timeout) {
   this.code = code;
   let to = parseInt(timeout);
   if (isNaN(to)) {
-    to = 60;
+    to = 120;
   } else if (to > 600) {
     to = 600;
   }
@@ -39,7 +39,9 @@ Sandbox.prototype.prepare = function(success) {
   fs.writeFileSync(usercode_path, sandbox.code);
 
   const previewProviders = require('child_process').execSync([path.join(this.root_dir, 'PreviewProviderParser'), usercode_path].join(' '));
-  fs.writeFileSync(path.join(work_dir, 'preview.swift'), `import SwiftUI\nfunc previewProviders() -> some View { ${previewProviders.toString().trim().split(',')[0]}.previews }`);
+  const previewProvider = previewProviders.toString().trim().split(',')[0]
+  this.previewProvider = previewProvider;
+  fs.writeFileSync(path.join(work_dir, 'preview.swift'), `import SwiftUI\nfunc previewProviders() -> some View { ${previewProvider}.previews }`);
 
   success();
 };
@@ -53,13 +55,16 @@ Sandbox.prototype.execute = function(success) {
   const sandbox = this;
   let counter = 0;
 
+  if (!this.previewProvider) {
+    success({output: '', previews: []}, 'No preview provider.', '');
+  }
+
   const work_dir = path.join(sandbox.root_dir, sandbox.temp_dir);
   exec(['sh', path.join(this.root_dir, 'run.sh'), this.timeout + 's', 'sh', path.join(work_dir, 'script.sh')].join(' '), {env: {'APP_ID': `${this.temp_dir}`.replace('temp/', '')}});
 
   const root_dir = this.root_dir;
   const temp_dir = this.temp_dir;
-  const static_dir = path.join(root_dir, path.join('static', temp_dir.split('/')[1]));
-  require('child_process').spawnSync('mkdir', [static_dir]);
+  const static_dir = path.join(root_dir, path.join('static', path.join('results', temp_dir.split('/')[1])));
 
   const intid = setInterval(function() {
     counter = counter + 1;
@@ -68,19 +73,21 @@ Sandbox.prototype.execute = function(success) {
         return;
       } else if (counter < sandbox.timeout) {
         fs.readFile(path.join(work_dir, 'errors'), 'utf8', function(error, errorlog) {
-          if (!errorlog) {
+          if (errorlog) {
+            errorlog = errorlog.split('usercode.swift:').join('');
+            errorlog = errorlog.split('make: *** [simulator] Error 1').join('');
+          } else {
             errorlog = '';
           }
-          const version = fs.readFileSync(path.join(work_dir, 'version'), 'utf8');
 
-          const Q = require('q');
-          const imgur = require('imgur');
-          imgur.setClientId(process.env.IMGUR_CLIENT_ID);
-          imgur.setAPIUrl('https://api.imgur.com/3/');
+          const version = fs.readFileSync(path.join(work_dir, 'version'), 'utf8');
 
           const glob = require('glob');
           const previewImages = glob.sync(`${work_dir}/*.png`);
           const previews = [];
+          if (previewImages.length > 0) {
+            require('child_process').spawnSync('mkdir', ['-p', static_dir]);
+          }
           for (const image of previewImages) {
             require('child_process').execSync(['cp', image, static_dir].join(' '));
             const sizeOf = require('image-size');
@@ -88,19 +95,18 @@ Sandbox.prototype.execute = function(success) {
             const previewData = {};
             previewData['width'] = dimensions.width;
             previewData['height'] = dimensions.height;
-            previewData['link'] = 'https://swiftui-playground.kishikawakatsumi.com/' + path.join(path.basename(static_dir), path.basename(image));
+            previewData['link'] = 'https://swiftui-playground.kishikawakatsumi.com/results/' + path.join(path.basename(static_dir), path.basename(image));
             previews.push(previewData);
           }
 
-          console.log(new Date());
-          console.log(previews);
+          console.log(`${new Date().toLocaleString("en-US", {timeZone: "Asia/Tokyo"})} ${JSON.stringify(previews)}`);
           execSync('rm', ['-rf', sandbox.temp_dir]);
           success({output: data, previews: previews}, errorlog, version);
         });
       } else {
         fs.readFile(path.join(work_dir, 'errors'), 'utf8', function(error, errorlog) {
           if (!errorlog) {
-            errorlog = 'timeout';
+            errorlog = 'The operation has timed out.';
           }
           const version = fs.readFileSync(path.join(work_dir, 'version'), 'utf8');
           execSync('rm', ['-rf', sandbox.temp_dir]);

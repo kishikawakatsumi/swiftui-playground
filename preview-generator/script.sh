@@ -1,5 +1,8 @@
 #!/bin/zsh
 
+set -e
+trap "mv log completed" 0
+
 pushd `dirname $0`
 
 exec 1> 'log'
@@ -18,5 +21,3 @@ make install
 
 make launch
 make uninstall
-
-mv log completed
